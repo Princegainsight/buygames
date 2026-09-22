@@ -59,19 +59,32 @@ function classifyUserType(email) {
 // ── 2c. Account derivation ─────────────────────────────────────────────────
 // GameVault is B2C — there's no real "company" behind a player. Rather than
 // send every tester as the same fake account (the previous behavior), derive
-// one from the email domain: ada@acme.com → account "acme". Different test
-// emails now produce genuinely different accounts, so account-level PX
-// segmentation is actually testable. sfdcId is intentionally left blank —
-// there's no real Salesforce record behind a guessed domain — but the field
-// is still sent so it's there to override manually if needed.
+// one from the email domain: ada@acme.com → account id "2342acme", name
+// "Acme". Different test emails now produce genuinely different accounts, so
+// account-level PX segmentation is actually testable. The numeric prefix is
+// a deterministic hash of the domain (not random) — the SAME domain always
+// gets the SAME prefix, on any day, on any device, so a given test account
+// stays stable across sessions. sfdcId is intentionally left blank — there's
+// no real Salesforce record behind a guessed domain — but the field is
+// still sent so it's there to override manually if needed.
+function hashString(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0; // 32-bit int hash, deterministic
+  }
+  return Math.abs(hash);
+}
+
 function deriveAccountFromEmail(email) {
   if (!email || email.indexOf('@') === -1) {
     return { id: 'unassigned', name: 'Unassigned account', sfdcId: '' };
   }
   var domain = email.split('@')[1].toLowerCase();
-  var base = domain.split('.')[0];
-  var name = base.charAt(0).toUpperCase() + base.slice(1);
-  return { id: domain, name: name, sfdcId: '' };
+  var base = domain.split('.')[0];                              // "acme"
+  var name = base.charAt(0).toUpperCase() + base.slice(1);       // "Acme"
+  var numPrefix = (hashString(domain) % 9000) + 1000;            // deterministic 4-digit number, e.g. 2342
+  var id = numPrefix + base;                                     // "2342acme"
+  return { id: id, name: name, sfdcId: '' };
 }
 
 // ── 3. Auto-identify + global context on every page load ──────────────────
