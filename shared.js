@@ -56,6 +56,24 @@ function classifyUserType(email) {
   return (email && /@gainsight\.com$/i.test(email.trim())) ? 'Internal' : 'External';
 }
 
+// ── 2c. Account derivation ─────────────────────────────────────────────────
+// GameVault is B2C — there's no real "company" behind a player. Rather than
+// send every tester as the same fake account (the previous behavior), derive
+// one from the email domain: ada@acme.com → account "acme". Different test
+// emails now produce genuinely different accounts, so account-level PX
+// segmentation is actually testable. sfdcId is intentionally left blank —
+// there's no real Salesforce record behind a guessed domain — but the field
+// is still sent so it's there to override manually if needed.
+function deriveAccountFromEmail(email) {
+  if (!email || email.indexOf('@') === -1) {
+    return { id: 'unassigned', name: 'Unassigned account', sfdcId: '' };
+  }
+  var domain = email.split('@')[1].toLowerCase();
+  var base = domain.split('.')[0];
+  var name = base.charAt(0).toUpperCase() + base.slice(1);
+  return { id: domain, name: name, sfdcId: '' };
+}
+
 // ── 3. Auto-identify + global context on every page load ──────────────────
 (function fireIdentifyIfLoggedIn() {
   var raw = sessionStorage.getItem('gv_user');
@@ -76,12 +94,7 @@ function classifyUserType(email) {
       "price"     : 0,
       "userHash"  : ""
     },
-    {
-      "id"      : "gamevault-store",
-      "name"    : "GameVault Store",
-      "sfdcId"  : "001D000000GVLTx",
-      "Program" : "Storefront"
-    }
+    deriveAccountFromEmail(user.email)
   );
 
   pxSetGlobalContext({ userType: classifyUserType(user.email) });
