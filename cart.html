@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GameVault — Cart &amp; Checkout</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="store.html"><div class="logo-mark">🎮</div>GameVault</a>
+  <div class="nav-links">
+    <a href="store.html">Store</a>
+    <a href="cart.html" class="active">Cart</a>
+    <a href="px-events.html">PX Events</a>
+  </div>
+  <div class="nav-user">
+    <a class="cart-link" href="cart.html">🛒<span class="cart-badge" id="cart-badge" style="display:none;">0</span></a>
+    <div class="avatar" id="nav-avatar">A</div>
+    <span class="nav-name" id="nav-name"></span>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page-banner">
+  <div class="page-banner-inner">
+    <div class="breadcrumb">Store → Cart &amp; Checkout</div>
+    <h2>🛒 Your Cart</h2>
+    <p>Quantity steppers, promo codes, payment selects, and a checkout flow that fires real PX events</p>
+  </div>
+</div>
+
+<div class="page-content" style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:flex-start;">
+  <div>
+    <div class="card" id="cart-card">
+      <div id="cart-items"></div>
+      <p id="cart-empty" style="color:var(--muted);font-size:14px;padding:1rem 0;display:none;">Your cart is empty — <a href="store.html" style="color:var(--accent);">browse the store</a>.</p>
+    </div>
+
+    <div class="section-header" style="margin-top:2rem;"><h3>Checkout details</h3><p>Standard form components for testing PX feature tagging</p></div>
+    <div class="card">
+      <div class="inputs-grid">
+        <div class="inp-group">
+          <label>Promo code</label>
+          <input type="text" id="promo-code" placeholder="e.g. VAULT10" onfocus="trackPX('promo_field_focus',{})"/>
+          <div class="inp-hint">Try "VAULT10" for 10% off</div>
+        </div>
+        <div class="sel-group">
+          <label>Payment method — native &lt;select&gt;</label>
+          <select id="payment-native" onchange="trackPX('payment_method_selected',{method:this.value})">
+            <option value="">Choose…</option>
+            <option>💳 Credit / Debit Card</option>
+            <option>🅿️ PayPal</option>
+            <option>🎁 Gift Card</option>
+            <option>🏦 Bank Transfer</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sel-group" style="margin-bottom:1.5rem;">
+        <label>Billing region — custom dropdown</label>
+        <div class="custom-select" id="regionSel">
+          <div class="cs-trigger" onclick="toggleRegion()">
+            <span id="region-val">Select region…</span><span class="cs-arrow">▾</span>
+          </div>
+          <div class="cs-dropdown">
+            <div class="cs-option" onclick="selectRegion(this,'North America')">🌎 North America</div>
+            <div class="cs-option" onclick="selectRegion(this,'Europe')">🌍 Europe</div>
+            <div class="cs-option" onclick="selectRegion(this,'Asia Pacific')">🌏 Asia Pacific</div>
+            <div class="cs-option" onclick="selectRegion(this,'Other')">🌐 Other</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toggle-wrap" style="margin-bottom:10px;">
+        <button class="toggle on" id="save-payment-toggle" onclick="toggleSwitch(this,'save_payment_method')"></button>Save payment method
+      </div>
+      <div class="toggle-wrap" style="margin-bottom:1.5rem;">
+        <button class="toggle" id="newsletter-toggle" onclick="toggleSwitch(this,'newsletter_subscribe')"></button>Subscribe to release newsletter
+      </div>
+
+      <div class="inp-group" style="margin-bottom:1.5rem;">
+        <label>Gift note (optional)</label>
+        <textarea id="gift-note" placeholder="Add a note if this is a gift…" onfocus="trackPX('gift_note_focus',{})"></textarea>
+      </div>
+
+      <button class="btn btn-success btn-lg" id="checkout-btn" style="width:100%;justify-content:center;">✅ Complete Purchase</button>
+    </div>
+  </div>
+
+  <div class="card" style="position:sticky;top:88px;">
+    <h3 style="font-size:15px;margin-bottom:14px;">Order summary</h3>
+    <div class="cart-summary-row"><span>Subtotal</span><span id="sum-subtotal">$0.00</span></div>
+    <div class="cart-summary-row"><span>Discount</span><span id="sum-discount">−$0.00</span></div>
+    <div class="cart-summary-row total"><span>Total</span><span id="sum-total">$0.00</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-title" id="toast-title"></div><div class="t-sub" id="toast-sub"></div></div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  var user = requireAuth();
+  if (user) populateNav(user);
+
+  var discountApplied = false;
+
+  function renderCart() {
+    var cart = getCart();
+    var container = document.getElementById('cart-items');
+    var empty = document.getElementById('cart-empty');
+    container.innerHTML = '';
+    if (cart.length === 0) { empty.style.display = 'block'; }
+    else { empty.style.display = 'none'; }
+
+    cart.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'cart-row';
+      row.innerHTML =
+        '<div class="cover-mini" style="' + coverStyle(item.genre) + '">' + (getGame(item.id) ? getGame(item.id).icon : '🎮') + '</div>' +
+        '<div style="flex:1;">' +
+          '<div class="ci-title">' + item.title + '</div>' +
+          '<div class="ci-genre">' + genreTagHtml(item.genre) + '</div>' +
+        '</div>' +
+        '<div class="qty-stepper">' +
+          '<button data-act="dec">−</button><span>' + item.qty + '</span><button data-act="inc">+</button>' +
+        '</div>' +
+        '<div class="ci-price">$' + (item.price * item.qty).toFixed(2) + '</div>' +
+        '<button class="btn btn-ghost btn-sm" data-act="remove">✕</button>';
+
+      row.querySelector('[data-act="inc"]').addEventListener('click', function () { changeQty(item.id, 1); });
+      row.querySelector('[data-act="dec"]').addEventListener('click', function () { changeQty(item.id, -1); });
+      row.querySelector('[data-act="remove"]').addEventListener('click', function () { removeItem(item.id); });
+      container.appendChild(row);
+    });
+
+    updateSummary();
+  }
+
+  function changeQty(id, delta) {
+    var cart = getCart();
+    var item = cart.find(function(i){ return i.id === id; });
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(function(i){ return i.id !== id; });
+    saveCart(cart);
+    trackPX('cart_quantity_changed', { gameId: id, delta: delta });
+    renderCart();
+  }
+
+  function removeItem(id) {
+    var cart = getCart().filter(function(i){ return i.id !== id; });
+    saveCart(cart);
+    trackPX('removed_from_cart', { gameId: id });
+    renderCart();
+  }
+
+  function updateSummary() {
+    var cart = getCart();
+    var subtotal = cart.reduce(function(s,i){ return s + i.price * i.qty; }, 0);
+    var discount = discountApplied ? subtotal * 0.10 : 0;
+    document.getElementById('sum-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('sum-discount').textContent = '−$' + discount.toFixed(2);
+    document.getElementById('sum-total').textContent = '$' + (subtotal - discount).toFixed(2);
+  }
+
+  document.getElementById('promo-code').addEventListener('blur', function () {
+    var code = this.value.trim().toUpperCase();
+    if (code === 'VAULT10' && !discountApplied) {
+      discountApplied = true;
+      trackPX('promo_code_applied', { code: code });
+      showToast('🎉 Promo applied', '10% off your order');
+      updateSummary();
+    }
+  });
+
+  function toggleRegion(){ document.getElementById('regionSel').classList.toggle('open'); }
+  function selectRegion(el, val) {
+    document.getElementById('region-val').textContent = val;
+    document.querySelectorAll('#regionSel .cs-option').forEach(function(o){ o.classList.remove('selected'); });
+    el.classList.add('selected');
+    document.getElementById('regionSel').classList.remove('open');
+    trackPX('billing_region_selected', { region: val });
+  }
+  document.addEventListener('click', function(e){
+    if (!e.target.closest('#regionSel')) document.getElementById('regionSel').classList.remove('open');
+  });
+
+  function toggleSwitch(btn, eventName) {
+    btn.classList.toggle('on');
+    trackPX(eventName, { on: btn.classList.contains('on') });
+  }
+
+  document.getElementById('checkout-btn').addEventListener('click', function () {
+    var cart = getCart();
+    if (cart.length === 0) { showToast('🛒 Cart is empty', 'Add a game before checking out'); return; }
+    var total = cart.reduce(function(s,i){ return s + i.price*i.qty; }, 0) * (discountApplied ? 0.9 : 1);
+    trackPX('purchase_completed', {
+      items: cart.map(function(i){ return i.id; }),
+      itemCount: cart.reduce(function(s,i){ return s+i.qty; }, 0),
+      total: Math.round(total * 100) / 100,
+      promoApplied: discountApplied
+    });
+    saveCart([]);
+    showToast('✅ Purchase complete', 'Your library has been updated');
+    renderCart();
+  });
+
+  renderCart();
+</script>
+</body>
+</html>

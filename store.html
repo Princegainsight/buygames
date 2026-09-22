@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GameVault — Store</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="store.html"><div class="logo-mark">🎮</div>GameVault</a>
+  <div class="nav-links">
+    <a href="store.html" class="active">Store</a>
+    <a href="cart.html">Cart</a>
+    <a href="px-events.html">PX Events</a>
+  </div>
+  <div class="nav-user">
+    <a class="cart-link" href="cart.html">🛒<span class="cart-badge" id="cart-badge" style="display:none;">0</span></a>
+    <div class="avatar" id="nav-avatar">A</div>
+    <span class="nav-name" id="nav-name"></span>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<div class="hero-banner">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1>Welcome back, <span id="welcome-name" style="color:var(--accent);"></span> 🎮</h1>
+      <p>Ten titles across five genres — filter below, click any cover for details, or add straight to cart to test the full purchase flow.</p>
+      <div class="hero-badges">
+        <span class="hbadge accent">✓ PX Identify Fired</span>
+        <span class="hbadge" id="usertype-badge">type: —</span>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-num">10</div><div class="hstat-label">Games</div></div>
+      <div class="hstat"><div class="hstat-num">5</div><div class="hstat-label">Genres</div></div>
+      <div class="hstat"><div class="hstat-num" id="cart-count-stat">0</div><div class="hstat-label">In cart</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="px-status">
+    <div class="px-dot"></div>
+    <div>
+      <strong>Gainsight PX identify + global context fired on login.</strong><br/>
+      <code>aptrinsic('identify', {id:'<span id="px-email"></span>', ...})</code> ·
+      <code>aptrinsic('set','globalContext',{userType:'<span id="px-usertype"></span>'})</code>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h3>Browse by genre</h3>
+    <p>Filtering fires a PX track event so you can test genre-based engagement targeting</p>
+  </div>
+  <div class="filter-row" id="filter-row">
+    <button class="filter-btn active" data-genre="all">All genres</button>
+    <button class="filter-btn" data-genre="fps">🎯 FPS</button>
+    <button class="filter-btn" data-genre="action">⚔️ Action</button>
+    <button class="filter-btn" data-genre="tpp">🗡️ TPP</button>
+    <button class="filter-btn" data-genre="fpp">🌌 FPP</button>
+    <button class="filter-btn" data-genre="story">🍃 Story</button>
+  </div>
+
+  <div class="game-grid" id="game-grid"></div>
+
+</div>
+
+<div class="toast" id="toast"><div class="t-title" id="toast-title"></div><div class="t-sub" id="toast-sub"></div></div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  var user = requireAuth();
+  if (user) {
+    populateNav(user);
+    document.getElementById('welcome-name').textContent = user.name.split(' ')[0];
+    document.getElementById('px-email').textContent = user.email;
+    document.getElementById('px-usertype').textContent = classifyUserType(user.email);
+    document.getElementById('usertype-badge').textContent = 'type: ' + classifyUserType(user.email);
+    document.getElementById('cart-count-stat').textContent = getCart().reduce(function(s,i){return s+i.qty;},0);
+  }
+
+  function renderGrid(filter) {
+    var grid = document.getElementById('game-grid');
+    grid.innerHTML = '';
+    GAMES.filter(function(g){ return filter === 'all' || g.genre === filter; }).forEach(function(g) {
+      var a = document.createElement('a');
+      a.className = 'game-card';
+      a.href = 'game-detail.html?id=' + g.id;
+      a.innerHTML =
+        '<div class="game-cover" style="' + coverStyle(g.genre) + '">' +
+          '<span class="cover-badge">' + genreTagHtml(g.genre) + '</span>' +
+          g.icon +
+          '<span class="cover-price">$' + g.price.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="game-info"><h4>' + g.title + '</h4><p>' + g.tagline + '</p></div>';
+      a.addEventListener('click', function () {
+        trackPX('game_viewed', { gameId: g.id, title: g.title, genre: g.genre, source: 'store_grid' });
+      });
+      grid.appendChild(a);
+    });
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      var genre = this.dataset.genre;
+      renderGrid(genre);
+      trackPX('genre_filtered', { genre: genre });
+    });
+  });
+
+  renderGrid('all');
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GameVault — Sign in</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;position:relative;overflow:hidden}
+    .login-bg{position:absolute;inset:0;background:
+      radial-gradient(700px 400px at 15% 20%, rgba(124,92,255,.25), transparent 60%),
+      radial-gradient(700px 400px at 85% 80%, rgba(34,211,238,.18), transparent 60%),
+      var(--bg);
+    }
+    .login-wrap{position:relative;z-index:2;display:flex;gap:0;border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.6);width:100%;max-width:860px;margin:1.5rem}
+    .login-left{background:linear-gradient(160deg,#1a1030,#0b0e14);padding:3rem 2.5rem;width:340px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid var(--border)}
+    .login-left h2{font-size:28px;font-weight:800;color:white;line-height:1.2;margin-bottom:1rem}
+    .login-left p{font-size:14px;color:var(--muted);line-height:1.7}
+    .genre-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:2rem}
+    .login-stats{display:flex;gap:1.5rem;margin-top:2.5rem}
+    .ls{text-align:center}
+    .ls-num{font-size:22px;font-weight:800;color:white}
+    .ls-label{font-size:11px;color:var(--muted);margin-top:2px}
+    .login-right{background:var(--bg2);padding:2.5rem;flex:1}
+    .login-right h3{font-size:20px;font-weight:700;margin-bottom:4px;color:white}
+    .login-right p{font-size:13px;color:var(--muted);margin-bottom:1.75rem}
+    .form-group{margin-bottom:1rem}
+    .form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--muted)}
+    .form-group input{width:100%;padding:10px 14px;border:1.5px solid var(--border);background:var(--card);border-radius:var(--radius);font-size:14px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s}
+    .form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.18)}
+    .err{color:var(--red);font-size:12px;margin-top:4px;display:none}
+    .login-note{text-align:center;font-size:12px;color:var(--muted);margin-top:1rem}
+    @media(max-width:640px){.login-wrap{flex-direction:column;max-width:400px}.login-left{width:100%;padding:2rem}.login-stats{justify-content:center}}
+  </style>
+</head>
+<body>
+
+<div id="login-page">
+  <div class="login-bg"></div>
+  <div class="login-wrap">
+    <div class="login-left">
+      <div>
+        <div style="font-size:28px;margin-bottom:.5rem">🎮</div>
+        <h2>Every genre.<br/>Every playthrough.<br/>One vault.</h2>
+        <p>Browse FPS, action, third &amp; first-person, and story-driven games — then jump straight into checkout.</p>
+        <div class="genre-pills">
+          <span class="genre-tag fps">FPS</span>
+          <span class="genre-tag action">Action</span>
+          <span class="genre-tag tpp">TPP</span>
+          <span class="genre-tag fpp">FPP</span>
+          <span class="genre-tag story">Story</span>
+        </div>
+      </div>
+      <div class="login-stats">
+        <div class="ls"><div class="ls-num">10</div><div class="ls-label">Titles</div></div>
+        <div class="ls"><div class="ls-num">5</div><div class="ls-label">Genres</div></div>
+        <div class="ls"><div class="ls-num">24K+</div><div class="ls-label">Players</div></div>
+      </div>
+    </div>
+    <div class="login-right">
+      <h3>Sign in to GameVault</h3>
+      <p>Any name / email / password works — this is a PX test sandbox</p>
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="login-name" placeholder="e.g. Alex Chen" autocomplete="name"/>
+        <div class="err" id="err-name">Please enter your full name</div>
+      </div>
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input type="email" id="login-email" placeholder="alex@example.com"/>
+        <div class="err" id="err-email">Please enter a valid email</div>
+      </div>
+      <div class="form-group">
+        <label>Password *</label>
+        <input type="password" id="login-password" placeholder="••••••••"/>
+        <div class="err" id="err-password">Password must be at least 4 characters</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;" onclick="doLogin()">🚀 Sign In &amp; Enter Store</button>
+      <p class="login-note">@gainsight.com emails are classified Internal — everyone else, External.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-title" id="toast-title"></div><div class="t-sub" id="toast-sub"></div></div>
+
+<script src="shared.js"></script>
+<script>
+  if (getUser()) window.location.href = 'store.html';
+
+  function doLogin() {
+    var name  = document.getElementById('login-name').value.trim();
+    var email = document.getElementById('login-email').value.trim();
+    var pass  = document.getElementById('login-password').value;
+    var ok = true;
+    ['name','email','password'].forEach(function(f){ document.getElementById('err-' + f).style.display = 'none'; });
+    if (!name)                            { document.getElementById('err-name').style.display = 'block'; ok = false; }
+    if (!email || !email.includes('@'))   { document.getElementById('err-email').style.display = 'block'; ok = false; }
+    if (pass.length < 4)                  { document.getElementById('err-password').style.display = 'block'; ok = false; }
+    if (!ok) return;
+
+    setUser(name, email);
+
+    pxIdentify(
+      {
+        id: email,
+        email: email,
+        firstName: name.split(' ')[0],
+        lastName: name.split(' ').slice(1).join(' '),
+        signUpDate: Date.now(),
+        plan: 'standard',
+        price: 0,
+        userHash: ''
+      },
+      {
+        id: 'gamevault-store',
+        name: 'GameVault Store',
+        sfdcId: '001D000000GVLTx',
+        Program: 'Storefront'
+      }
+    );
+    pxSetGlobalContext({ userType: classifyUserType(email) });
+
+    window.location.href = 'store.html';
+  }
+</script>
+</body>
+</html>
