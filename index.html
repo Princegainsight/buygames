@@ -111,12 +111,7 @@
         price: 0,
         userHash: ''
       },
-      {
-        id: 'gamevault-store',
-        name: 'GameVault Store',
-        sfdcId: '001D000000GVLTx',
-        Program: 'Storefront'
-      }
+      deriveAccountFromEmail(email)
     );
     pxSetGlobalContext({ userType: classifyUserType(email) });
 
