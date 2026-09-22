@@ -47,7 +47,7 @@
     <div class="px-dot"></div>
     <div>
       <strong>Gainsight PX identify + global context fired on login.</strong><br/>
-      <code>aptrinsic('identify', {id:'<span id="px-email"></span>', ...})</code> ·
+      <code>aptrinsic('identify', {id:'<span id="px-email"></span>', ...}, {id:'<span id="px-account-id"></span>', name:'<span id="px-account-name"></span>'})</code> ·
       <code>aptrinsic('set','globalContext',{userType:'<span id="px-usertype"></span>'})</code>
     </div>
   </div>
@@ -80,6 +80,9 @@
     document.getElementById('welcome-name').textContent = user.name.split(' ')[0];
     document.getElementById('px-email').textContent = user.email;
     document.getElementById('px-usertype').textContent = classifyUserType(user.email);
+    var acct = deriveAccountFromEmail(user.email);
+    document.getElementById('px-account-id').textContent = acct.id;
+    document.getElementById('px-account-name').textContent = acct.name;
     document.getElementById('usertype-badge').textContent = 'type: ' + classifyUserType(user.email);
     document.getElementById('cart-count-stat').textContent = getCart().reduce(function(s,i){return s+i.qty;},0);
   }
